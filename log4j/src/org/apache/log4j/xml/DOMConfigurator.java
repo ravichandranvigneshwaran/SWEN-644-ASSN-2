@@ -868,8 +868,116 @@ public class DOMConfigurator implements Configurator {
       docBuilder.setErrorHandler(new SAXErrorHandler());      
       docBuilder.setEntityResolver(new Log4jEntityResolver());
          
-      Document doc = action.parse(docBuilder);     
-      parse(doc.getDocumentElement());
+      Document doc = action.parse(docBuilder);
+        boolean finished = false;
+        Element element = doc.getDocumentElement();
+
+        String rootElementName = element.getTagName();
+
+        if (!rootElementName.equals(CONFIGURATION_TAG)) {
+          if(rootElementName.equals(OLD_CONFIGURATION_TAG)) {
+        LogLog.warn("The <"+OLD_CONFIGURATION_TAG+
+                 "> element has been deprecated.");
+        LogLog.warn("Use the <"+CONFIGURATION_TAG+"> element instead.");
+          } else {
+        LogLog.error("DOM element is - not a <"+CONFIGURATION_TAG+"> element.");
+              finished = true;
+          }
+        }
+        if (!finished) {
+            String debugAttrib = subst(element.getAttribute(INTERNAL_DEBUG_ATTR));
+
+            LogLog.debug("debug attribute= \"" + debugAttrib +"\".");
+            // if the log4j.dtd is not specified in the XML file, then the
+            // "debug" attribute is returned as the empty string.
+            if(!debugAttrib.equals("") && !debugAttrib.equals("null")) {
+              LogLog.setInternalDebugging(OptionConverter.toBoolean(debugAttrib, true));
+            } else {
+              LogLog.debug("Ignoring " + INTERNAL_DEBUG_ATTR + " attribute.");
+            }
+
+            //
+            //   reset repository before configuration if reset="true"
+            //       on configuration element.
+            //
+            String resetAttrib = subst(element.getAttribute(RESET_ATTR));
+            LogLog.debug("reset attribute= \"" + resetAttrib +"\".");
+            if(!("".equals(resetAttrib))) {
+                 if (OptionConverter.toBoolean(resetAttrib, false)) {
+                     this.repository.resetConfiguration();
+                 }
+            }
+
+
+            String confDebug = subst(element.getAttribute(CONFIG_DEBUG_ATTR));
+            if(!confDebug.equals("") && !confDebug.equals("null")) {
+              LogLog.warn("The \""+CONFIG_DEBUG_ATTR+"\" attribute is deprecated.");
+              LogLog.warn("Use the \""+INTERNAL_DEBUG_ATTR+"\" attribute instead.");
+              LogLog.setInternalDebugging(OptionConverter.toBoolean(confDebug, true));
+            }
+
+            String thresholdStr = subst(element.getAttribute(THRESHOLD_ATTR));
+            LogLog.debug("Threshold =\"" + thresholdStr +"\".");
+            if(!"".equals(thresholdStr) && !"null".equals(thresholdStr)) {
+              this.repository.setThreshold(thresholdStr);
+            }
+
+            //Hashtable appenderBag = new Hashtable(11);
+
+    /* Building Appender objects, placing them in a local namespace
+       for future reference */
+
+            // First configure each category factory under the root element.
+            // Category factories need to be configured before any of
+            // categories they support.
+            //
+            String   tagName = null;
+            Element  currentElement = null;
+            Node     currentNode = null;
+            NodeList children = element.getChildNodes();
+            final int length = children.getLength();
+
+            for (int loop = 0; loop < length; loop++) {
+              currentNode = children.item(loop);
+              if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+            currentElement = (Element) currentNode;
+            tagName = currentElement.getTagName();
+
+            if (tagName.equals(CATEGORY_FACTORY_TAG) || tagName.equals(LOGGER_FACTORY_TAG)) {
+              parseCategoryFactory(currentElement);
+            }
+              }
+            }
+
+            for (int loop = 0; loop < length; loop++) {
+              currentNode = children.item(loop);
+              if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+            currentElement = (Element) currentNode;
+            tagName = currentElement.getTagName();
+
+            if (tagName.equals(CATEGORY) || tagName.equals(LOGGER)) {
+              parseCategory(currentElement);
+            } else if (tagName.equals(ROOT_TAG)) {
+              parseRoot(currentElement);
+            } else if(tagName.equals(RENDERER_TAG)) {
+              parseRenderer(currentElement);
+            } else if(tagName.equals(THROWABLE_RENDERER_TAG)) {
+                if (this.repository instanceof ThrowableRendererSupport) {
+                    ThrowableRenderer tr = parseThrowableRenderer(currentElement);
+                    if (tr != null) {
+                        ((ThrowableRendererSupport) this.repository).setThrowableRenderer(tr);
+                    }
+                }
+            } else if (!(tagName.equals(APPENDER_TAG)
+                    || tagName.equals(CATEGORY_FACTORY_TAG)
+                    || tagName.equals(LOGGER_FACTORY_TAG))) {
+                quietParseUnrecognizedElement(this.repository, currentElement, props);
+            }
+              }
+            }
+        }
+
+
     } catch (Exception e) {
         if (e instanceof InterruptedException || e instanceof InterruptedIOException) {
             Thread.currentThread().interrupt();
@@ -884,7 +992,111 @@ public class DOMConfigurator implements Configurator {
   */
   public void doConfigure(Element element, LoggerRepository repository) {
     this.repository = repository;
-    parse(element);
+
+      String rootElementName = element.getTagName();
+
+      if (!rootElementName.equals(CONFIGURATION_TAG)) {
+        if(rootElementName.equals(OLD_CONFIGURATION_TAG)) {
+      LogLog.warn("The <"+OLD_CONFIGURATION_TAG+
+               "> element has been deprecated.");
+      LogLog.warn("Use the <"+CONFIGURATION_TAG+"> element instead.");
+        } else {
+      LogLog.error("DOM element is - not a <"+CONFIGURATION_TAG+"> element.");
+      return;
+        }
+      }
+
+
+      String debugAttrib = subst(element.getAttribute(INTERNAL_DEBUG_ATTR));
+
+      LogLog.debug("debug attribute= \"" + debugAttrib +"\".");
+      // if the log4j.dtd is not specified in the XML file, then the
+      // "debug" attribute is returned as the empty string.
+      if(!debugAttrib.equals("") && !debugAttrib.equals("null")) {
+        LogLog.setInternalDebugging(OptionConverter.toBoolean(debugAttrib, true));
+      } else {
+        LogLog.debug("Ignoring " + INTERNAL_DEBUG_ATTR + " attribute.");
+      }
+
+      //
+      //   reset repository before configuration if reset="true"
+      //       on configuration element.
+      //
+      String resetAttrib = subst(element.getAttribute(RESET_ATTR));
+      LogLog.debug("reset attribute= \"" + resetAttrib +"\".");
+      if(!("".equals(resetAttrib))) {
+           if (OptionConverter.toBoolean(resetAttrib, false)) {
+               this.repository.resetConfiguration();
+           }
+      }
+
+
+      String confDebug = subst(element.getAttribute(CONFIG_DEBUG_ATTR));
+      if(!confDebug.equals("") && !confDebug.equals("null")) {
+        LogLog.warn("The \""+CONFIG_DEBUG_ATTR+"\" attribute is deprecated.");
+        LogLog.warn("Use the \""+INTERNAL_DEBUG_ATTR+"\" attribute instead.");
+        LogLog.setInternalDebugging(OptionConverter.toBoolean(confDebug, true));
+      }
+
+      String thresholdStr = subst(element.getAttribute(THRESHOLD_ATTR));
+      LogLog.debug("Threshold =\"" + thresholdStr +"\".");
+      if(!"".equals(thresholdStr) && !"null".equals(thresholdStr)) {
+        this.repository.setThreshold(thresholdStr);
+      }
+
+      //Hashtable appenderBag = new Hashtable(11);
+
+    /* Building Appender objects, placing them in a local namespace
+       for future reference */
+
+      // First configure each category factory under the root element.
+      // Category factories need to be configured before any of
+      // categories they support.
+      //
+      String   tagName = null;
+      Element  currentElement = null;
+      Node     currentNode = null;
+      NodeList children = element.getChildNodes();
+      final int length = children.getLength();
+
+      for (int loop = 0; loop < length; loop++) {
+        currentNode = children.item(loop);
+        if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+      currentElement = (Element) currentNode;
+      tagName = currentElement.getTagName();
+
+      if (tagName.equals(CATEGORY_FACTORY_TAG) || tagName.equals(LOGGER_FACTORY_TAG)) {
+        parseCategoryFactory(currentElement);
+      }
+        }
+      }
+
+      for (int loop = 0; loop < length; loop++) {
+        currentNode = children.item(loop);
+        if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+      currentElement = (Element) currentNode;
+      tagName = currentElement.getTagName();
+
+      if (tagName.equals(CATEGORY) || tagName.equals(LOGGER)) {
+        parseCategory(currentElement);
+      } else if (tagName.equals(ROOT_TAG)) {
+        parseRoot(currentElement);
+      } else if(tagName.equals(RENDERER_TAG)) {
+        parseRenderer(currentElement);
+      } else if(tagName.equals(THROWABLE_RENDERER_TAG)) {
+          if (this.repository instanceof ThrowableRendererSupport) {
+              ThrowableRenderer tr = parseThrowableRenderer(currentElement);
+              if (tr != null) {
+                  ((ThrowableRendererSupport) this.repository).setThrowableRenderer(tr);
+              }
+          }
+      } else if (!(tagName.equals(APPENDER_TAG)
+              || tagName.equals(CATEGORY_FACTORY_TAG)
+              || tagName.equals(LOGGER_FACTORY_TAG))) {
+          quietParseUnrecognizedElement(this.repository, currentElement, props);
+      }
+        }
+      }
   }
 
   
@@ -906,124 +1118,8 @@ public class DOMConfigurator implements Configurator {
     new DOMConfigurator().doConfigure(url, LogManager.getLoggerRepository());
   }
 
-  /**
-     Used internally to configure the log4j framework by parsing a DOM
-     tree of XML elements based on <a
-     href="doc-files/log4j.dtd">log4j.dtd</a>.
-     
-  */
-  protected
-  void parse(Element element) {
 
-    String rootElementName = element.getTagName();
-
-    if (!rootElementName.equals(CONFIGURATION_TAG)) {
-      if(rootElementName.equals(OLD_CONFIGURATION_TAG)) {
-	LogLog.warn("The <"+OLD_CONFIGURATION_TAG+
-		     "> element has been deprecated.");
-	LogLog.warn("Use the <"+CONFIGURATION_TAG+"> element instead.");
-      } else {
-	LogLog.error("DOM element is - not a <"+CONFIGURATION_TAG+"> element.");
-	return;
-      }
-    }
-
-
-    String debugAttrib = subst(element.getAttribute(INTERNAL_DEBUG_ATTR));
-      
-    LogLog.debug("debug attribute= \"" + debugAttrib +"\".");
-    // if the log4j.dtd is not specified in the XML file, then the
-    // "debug" attribute is returned as the empty string.
-    if(!debugAttrib.equals("") && !debugAttrib.equals("null")) {      
-      LogLog.setInternalDebugging(OptionConverter.toBoolean(debugAttrib, true));
-    } else {
-      LogLog.debug("Ignoring " + INTERNAL_DEBUG_ATTR + " attribute.");
-    }
-
-      //
-      //   reset repository before configuration if reset="true"
-      //       on configuration element.
-      //
-    String resetAttrib = subst(element.getAttribute(RESET_ATTR));
-    LogLog.debug("reset attribute= \"" + resetAttrib +"\".");
-    if(!("".equals(resetAttrib))) {
-         if (OptionConverter.toBoolean(resetAttrib, false)) {
-             repository.resetConfiguration();
-         }
-    }
-
-
-
-    String confDebug = subst(element.getAttribute(CONFIG_DEBUG_ATTR));
-    if(!confDebug.equals("") && !confDebug.equals("null")) {      
-      LogLog.warn("The \""+CONFIG_DEBUG_ATTR+"\" attribute is deprecated.");
-      LogLog.warn("Use the \""+INTERNAL_DEBUG_ATTR+"\" attribute instead.");
-      LogLog.setInternalDebugging(OptionConverter.toBoolean(confDebug, true));
-    }
-
-    String thresholdStr = subst(element.getAttribute(THRESHOLD_ATTR));
-    LogLog.debug("Threshold =\"" + thresholdStr +"\".");
-    if(!"".equals(thresholdStr) && !"null".equals(thresholdStr)) {
-      repository.setThreshold(thresholdStr);
-    }
-
-    //Hashtable appenderBag = new Hashtable(11);
-
-    /* Building Appender objects, placing them in a local namespace
-       for future reference */
-
-    // First configure each category factory under the root element.
-    // Category factories need to be configured before any of
-    // categories they support.
-    //
-    String   tagName = null;
-    Element  currentElement = null;
-    Node     currentNode = null;
-    NodeList children = element.getChildNodes();
-    final int length = children.getLength();
-
-    for (int loop = 0; loop < length; loop++) {
-      currentNode = children.item(loop);
-      if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-	currentElement = (Element) currentNode;
-	tagName = currentElement.getTagName();
-
-	if (tagName.equals(CATEGORY_FACTORY_TAG) || tagName.equals(LOGGER_FACTORY_TAG)) {
-	  parseCategoryFactory(currentElement);
-	}
-      }
-    }
-    
-    for (int loop = 0; loop < length; loop++) {
-      currentNode = children.item(loop);
-      if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-	currentElement = (Element) currentNode;
-	tagName = currentElement.getTagName();
-
-	if (tagName.equals(CATEGORY) || tagName.equals(LOGGER)) {
-	  parseCategory(currentElement);
-	} else if (tagName.equals(ROOT_TAG)) {
-	  parseRoot(currentElement);
-	} else if(tagName.equals(RENDERER_TAG)) {
-	  parseRenderer(currentElement);
-    } else if(tagName.equals(THROWABLE_RENDERER_TAG)) {
-        if (repository instanceof ThrowableRendererSupport) {
-            ThrowableRenderer tr = parseThrowableRenderer(currentElement);
-            if (tr != null) {
-                ((ThrowableRendererSupport) repository).setThrowableRenderer(tr);
-            }
-        }
-    } else if (!(tagName.equals(APPENDER_TAG)
-            || tagName.equals(CATEGORY_FACTORY_TAG)
-            || tagName.equals(LOGGER_FACTORY_TAG))) {
-        quietParseUnrecognizedElement(repository, currentElement, props);
-    }
-      }
-    }
-  }
-
-  
-  protected
+    protected
   String subst(final String value) {
       return subst(value, props);
   }

@@ -182,27 +182,6 @@ class MyTableModel
         return (aCol == 2) ? Boolean.class : Object.class;
     }
 
-    /** @see javax.swing.table.TableModel **/
-    public Object getValueAt(int aRow, int aCol) {
-        synchronized (mLock) {
-            final EventDetails event = mFilteredEvents[aRow];
-
-            if (aCol == 0) {
-                return DATE_FORMATTER.format(new Date(event.getTimeStamp()));
-            } else if (aCol == 1) {
-                return event.getPriority();
-            } else if (aCol == 2) {
-                return (event.getThrowableStrRep() == null)
-                    ? Boolean.FALSE : Boolean.TRUE;
-            } else if (aCol == 3) {
-                return event.getCategoryName();
-            } else if (aCol == 4) {
-                return event.getNDC();
-            }
-            return event.getMessage();
-        }
-    }
-
     ////////////////////////////////////////////////////////////////////////////
     // Public Methods
     ////////////////////////////////////////////////////////////////////////////

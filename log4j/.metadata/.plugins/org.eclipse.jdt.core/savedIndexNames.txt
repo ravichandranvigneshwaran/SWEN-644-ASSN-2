@@ -1,0 +1,1 @@
+INDEX VERSION 1.131+C:\Users\Vigneshwaran-R\ClassWork\Software Eng for DS\Ass 2\log4j\.metadata\.plugins\org.eclipse.jdt.core

@@ -116,7 +116,22 @@ public class LogFileParser implements Runnable {
       String logRecords = loadLogFile(_in);
 
       while ((counter = logRecords.indexOf(RECORD_DELIMITER, index)) != -1) {
-        temp = createLogRecord(logRecords.substring(index, counter));
+        LogRecord result = null;
+        String record = logRecords.substring(index, counter);
+        if (record != null && record.trim().length() != 0) {
+          LogRecord lr = new Log4JLogRecord();
+          lr.setMillis(parseDate(record));
+          lr.setLevel(parsePriority(record));
+          lr.setCategory(parseCategory(record));
+          lr.setLocation(parseLocation(record));
+          lr.setThreadDescription(parseThread(record));
+          lr.setNDC(parseNDC(record));
+          lr.setMessage(parseMessage(record));
+          lr.setThrownStackTrace(parseThrowable(record));
+          result = lr;
+        }
+
+        temp = result;
         isLogFile = true;
 
         if (temp != null) {
@@ -127,7 +142,22 @@ public class LogFileParser implements Runnable {
       }
 
       if (index < logRecords.length() && isLogFile) {
-        temp = createLogRecord(logRecords.substring(index));
+        LogRecord result = null;
+        String record = logRecords.substring(index);
+        if (record != null && record.trim().length() != 0) {
+          LogRecord lr = new Log4JLogRecord();
+          lr.setMillis(parseDate(record));
+          lr.setLevel(parsePriority(record));
+          lr.setCategory(parseCategory(record));
+          lr.setLocation(parseLocation(record));
+          lr.setThreadDescription(parseThread(record));
+          lr.setNDC(parseNDC(record));
+          lr.setMessage(parseMessage(record));
+          lr.setThrownStackTrace(parseThrowable(record));
+          result = lr;
+        }
+
+        temp = result;
 
         if (temp != null) {
           _monitor.addMessage(temp);
@@ -262,24 +292,6 @@ public class LogFileParser implements Runnable {
 
   private String parseThrowable(String record) {
     return getAttribute(record.length(), record);
-  }
-
-  private LogRecord createLogRecord(String record) {
-    if (record == null || record.trim().length() == 0) {
-      return null;
-    }
-
-    LogRecord lr = new Log4JLogRecord();
-    lr.setMillis(parseDate(record));
-    lr.setLevel(parsePriority(record));
-    lr.setCategory(parseCategory(record));
-    lr.setLocation(parseLocation(record));
-    lr.setThreadDescription(parseThread(record));
-    lr.setNDC(parseNDC(record));
-    lr.setMessage(parseMessage(record));
-    lr.setThrownStackTrace(parseThrowable(record));
-
-    return lr;
   }
 
 

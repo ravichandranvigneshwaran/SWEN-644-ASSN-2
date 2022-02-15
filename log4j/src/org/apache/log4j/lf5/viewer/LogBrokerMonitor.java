@@ -90,29 +90,10 @@ public class LogBrokerMonitor {
   //   Constants:
   //--------------------------------------------------------------------------
 
-  public static final String DETAILED_VIEW = "Detailed";
-//    public static final String STANDARD_VIEW = "Standard";
-//    public static final String COMPACT_VIEW = "Compact";
-  //--------------------------------------------------------------------------
-  //   Protected Variables:
-  //--------------------------------------------------------------------------
-  protected JFrame _logMonitorFrame;
-  protected int _logMonitorFrameWidth = 550;
-  protected int _logMonitorFrameHeight = 500;
-  protected LogTable _table;
-  protected CategoryExplorerTree _categoryExplorerTree;
-  protected String _searchText;
-  protected String _NDCTextFilter = "";
-  protected LogLevel _leastSevereDisplayedLogLevel = LogLevel.DEBUG;
+  protected final LogBrokerMonitorR logBrokerMonitorR = new LogBrokerMonitorR();
 
-  protected JScrollPane _logTableScrollPane;
-  protected JLabel _statusLabel;
-  protected Object _lock = new Object();
-  protected JComboBox _fontSizeCombo;
-
-  protected int _fontSize = 10;
   protected String _fontName = "Dialog";
-  protected String _currentView = DETAILED_VIEW;
+  protected String _currentView = LogBrokerMonitorR.DETAILED_VIEW;
 
   protected boolean _loadSystemFonts = false;
   protected boolean _trackTableScrollPane = true;
@@ -163,7 +144,7 @@ public class LogBrokerMonitor {
     initComponents();
 
 
-    _logMonitorFrame.addWindowListener(
+    logBrokerMonitorR.get_logMonitorFrame().addWindowListener(
         new LogBrokerMonitorWindowAdaptor(this));
 
   }
@@ -177,7 +158,7 @@ public class LogBrokerMonitor {
    * swing thread.
    */
   public void show(final int delay) {
-    if (_logMonitorFrame.isVisible()) {
+    if (logBrokerMonitorR.get_logMonitorFrame().isVisible()) {
       return;
     }
     // This request is very low priority, let other threads execute first.
@@ -185,7 +166,7 @@ public class LogBrokerMonitor {
       public void run() {
         Thread.yield();
         pause(delay);
-        _logMonitorFrame.setVisible(true);
+        logBrokerMonitorR.get_logMonitorFrame().setVisible(true);
       }
     });
   }
@@ -198,7 +179,7 @@ public class LogBrokerMonitor {
    * Dispose of the frame for the LogBrokerMonitor.
    */
   public void dispose() {
-    _logMonitorFrame.dispose();
+    logBrokerMonitorR.get_logMonitorFrame().dispose();
     _isDisposed = true;
 
     if (_callSystemExitOnClose == true) {
@@ -210,21 +191,21 @@ public class LogBrokerMonitor {
    * Hide the frame for the LogBrokerMonitor.
    */
   public void hide() {
-    _logMonitorFrame.setVisible(false);
+    logBrokerMonitorR.get_logMonitorFrame().setVisible(false);
   }
 
   /**
    * Get the DateFormatManager for formatting dates.
    */
   public DateFormatManager getDateFormatManager() {
-    return _table.getDateFormatManager();
+    return logBrokerMonitorR.get_table().getDateFormatManager();
   }
 
   /**
    * Set the date format manager for formatting dates.
    */
   public void setDateFormatManager(DateFormatManager dfm) {
-    _table.setDateFormatManager(dfm);
+    logBrokerMonitorR.get_table().setDateFormatManager(dfm);
   }
 
   /**
@@ -257,38 +238,38 @@ public class LogBrokerMonitor {
 
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
-        _categoryExplorerTree.getExplorerModel().addLogRecord(lr);
-        _table.getFilteredLogTableModel().addLogRecord(lr); // update table
-        updateStatusLabel(); // show updated counts
+        logBrokerMonitorR.get_categoryExplorerTree().getExplorerModel().addLogRecord(lr);
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().addLogRecord(lr); // update table
+        logBrokerMonitorR.updateStatusLabel(); // show updated counts
       }
     });
   }
 
   public void setMaxNumberOfLogRecords(int maxNumberOfLogRecords) {
-    _table.getFilteredLogTableModel().setMaxNumberOfLogRecords(maxNumberOfLogRecords);
+    logBrokerMonitorR.get_table().getFilteredLogTableModel().setMaxNumberOfLogRecords(maxNumberOfLogRecords);
   }
 
   public JFrame getBaseFrame() {
-    return _logMonitorFrame;
+    return logBrokerMonitorR.get_logMonitorFrame();
   }
 
   public void setTitle(String title) {
-    _logMonitorFrame.setTitle(title + " - LogFactor5");
+    logBrokerMonitorR.get_logMonitorFrame().setTitle(title + " - LogFactor5");
   }
 
   public void setFrameSize(int width, int height) {
     Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
     if (0 < width && width < screen.width) {
-      _logMonitorFrameWidth = width;
+      logBrokerMonitorR.set_logMonitorFrameWidth(width);
     }
     if (0 < height && height < screen.height) {
-      _logMonitorFrameHeight = height;
+      logBrokerMonitorR.set_logMonitorFrameHeight(height);
     }
-    updateFrameSize();
+    logBrokerMonitorR.updateFrameSize();
   }
 
   public void setFontSize(int fontSize) {
-    changeFontSizeCombo(_fontSizeCombo, fontSize);
+    logBrokerMonitorR.changeFontSizeCombo(logBrokerMonitorR.get_fontSizeCombo(), fontSize);
     // setFontSizeSilently(actualFontSize); - changeFontSizeCombo fires event
     // refreshDetailTextArea();
   }
@@ -310,20 +291,20 @@ public class LogBrokerMonitor {
   }
 
   public CategoryExplorerTree getCategoryExplorerTree() {
-    return _categoryExplorerTree;
+    return logBrokerMonitorR.get_categoryExplorerTree();
   }
 
   // Added in version 1.2 - gets the value of the NDC text filter
   // This value is set back to null each time the Monitor is initialized.
   public String getNDCTextFilter() {
-    return _NDCTextFilter;
+    return logBrokerMonitorR.get_NDCTextFilter();
   }
 
   // Added in version 1.2 - sets the NDC Filter based on
   // a String passed in by the user.  This value is persisted
   // in the XML Configuration file.
   public void setNDCLogRecordFilter(String textFilter) {
-    _table.getFilteredLogTableModel().
+    logBrokerMonitorR.get_table().getFilteredLogTableModel().
         setLogRecordFilter(createNDCLogRecordFilter(textFilter));
   }
   //--------------------------------------------------------------------------
@@ -331,7 +312,7 @@ public class LogBrokerMonitor {
   //--------------------------------------------------------------------------
 
   protected void setSearchText(String text) {
-    _searchText = text;
+    logBrokerMonitorR.set_searchText(text);
   }
 
   // Added in version 1.2 - Sets the text filter for the NDC
@@ -339,9 +320,9 @@ public class LogBrokerMonitor {
     // if no value is set, set it to a blank string
     // otherwise use the value provided
     if (text == null) {
-      _NDCTextFilter = "";
+      logBrokerMonitorR.set_NDCTextFilter("");
     } else {
-      _NDCTextFilter = text;
+      logBrokerMonitorR.set_NDCTextFilter(text);
     }
   }
 
@@ -349,18 +330,18 @@ public class LogBrokerMonitor {
   // based on an NDC string passed in by the user.  If the string
   // is null or is an empty string, we do nothing.
   protected void sortByNDC() {
-    String text = _NDCTextFilter;
+    String text = logBrokerMonitorR.get_NDCTextFilter();
     if (text == null || text.length() == 0) {
       return;
     }
 
     // Use new NDC filter
-    _table.getFilteredLogTableModel().
+    logBrokerMonitorR.get_table().getFilteredLogTableModel().
         setLogRecordFilter(createNDCLogRecordFilter(text));
   }
 
   protected void findSearchText() {
-    String text = _searchText;
+    String text = logBrokerMonitorR.get_searchText();
     if (text == null || text.length() == 0) {
       return;
     }
@@ -368,27 +349,27 @@ public class LogBrokerMonitor {
     int foundRow = findRecord(
         startRow,
         text,
-        _table.getFilteredLogTableModel().getFilteredRecords()
+            logBrokerMonitorR.get_table().getFilteredLogTableModel().getFilteredRecords()
     );
     selectRow(foundRow);
   }
 
   protected int getFirstSelectedRow() {
-    return _table.getSelectionModel().getMinSelectionIndex();
+    return logBrokerMonitorR.get_table().getSelectionModel().getMinSelectionIndex();
   }
 
   protected void selectRow(int foundRow) {
     if (foundRow == -1) {
-      String message = _searchText + " not found.";
+      String message = logBrokerMonitorR.get_searchText() + " not found.";
       JOptionPane.showMessageDialog(
-          _logMonitorFrame,
+              logBrokerMonitorR.get_logMonitorFrame(),
           message,
           "Text not found",
           JOptionPane.INFORMATION_MESSAGE
       );
       return;
     }
-    LF5SwingUtils.selectRow(foundRow, _table, _logTableScrollPane);
+    LF5SwingUtils.selectRow(foundRow, logBrokerMonitorR.get_table(), logBrokerMonitorR.get_logTableScrollPane());
   }
 
   protected int findRecord(
@@ -450,11 +431,11 @@ public class LogBrokerMonitor {
   }
 
   protected void refreshDetailTextArea() {
-    refresh(_table._detailTextArea);
+    refresh(logBrokerMonitorR.get_table()._detailTextArea);
   }
 
   protected void clearDetailTextArea() {
-    _table._detailTextArea.setText("");
+    logBrokerMonitorR.get_table()._detailTextArea.setText("");
   }
 
   /**
@@ -463,43 +444,25 @@ public class LogBrokerMonitor {
    * @return -1 if unable to select an appropriate font
    */
   protected int changeFontSizeCombo(JComboBox box, int requestedSize) {
-    int len = box.getItemCount();
-    int currentValue;
-    Object currentObject;
-    Object selectedObject = box.getItemAt(0);
-    int selectedValue = Integer.parseInt(String.valueOf(selectedObject));
-    for (int i = 0; i < len; i++) {
-      currentObject = box.getItemAt(i);
-      currentValue = Integer.parseInt(String.valueOf(currentObject));
-      if (selectedValue < currentValue && currentValue <= requestedSize) {
-        selectedValue = currentValue;
-        selectedObject = currentObject;
-      }
-    }
-    box.setSelectedItem(selectedObject);
-    return selectedValue;
+    return logBrokerMonitorR.changeFontSizeCombo(box, requestedSize);
   }
 
   /**
    * Does not update gui or cause any events to be fired.
    */
   protected void setFontSizeSilently(int fontSize) {
-    _fontSize = fontSize;
-    setFontSize(_table._detailTextArea, fontSize);
+    logBrokerMonitorR.set_fontSize(fontSize);
+    logBrokerMonitorR.setFontSize(logBrokerMonitorR.get_table()._detailTextArea, fontSize);
     selectRow(0);
-    setFontSize(_table, fontSize);
+    logBrokerMonitorR.setFontSize(logBrokerMonitorR.get_table(), fontSize);
   }
 
   protected void setFontSize(Component component, int fontSize) {
-    Font oldFont = component.getFont();
-    Font newFont =
-        new Font(oldFont.getFontName(), oldFont.getStyle(), fontSize);
-    component.setFont(newFont);
+    logBrokerMonitorR.setFontSize(component, fontSize);
   }
 
   protected void updateFrameSize() {
-    _logMonitorFrame.setSize(_logMonitorFrameWidth, _logMonitorFrameHeight);
-    centerFrame(_logMonitorFrame);
+    logBrokerMonitorR.updateFrameSize();
   }
 
   protected void pause(int millis) {
@@ -514,31 +477,31 @@ public class LogBrokerMonitor {
     //
     // Configure the Frame.
     //
-    _logMonitorFrame = new JFrame("LogFactor5");
+    logBrokerMonitorR.set_logMonitorFrame(new JFrame("LogFactor5"));
 
-    _logMonitorFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+    logBrokerMonitorR.get_logMonitorFrame().setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
     String resource =
         "/org/apache/log4j/lf5/viewer/images/lf5_small_icon.gif";
     URL lf5IconURL = getClass().getResource(resource);
 
     if (lf5IconURL != null) {
-      _logMonitorFrame.setIconImage(new ImageIcon(lf5IconURL).getImage());
+      logBrokerMonitorR.get_logMonitorFrame().setIconImage(new ImageIcon(lf5IconURL).getImage());
     }
-    updateFrameSize();
+    logBrokerMonitorR.updateFrameSize();
 
     //
     // Configure the LogTable.
     //
-    JTextArea detailTA = createDetailTextArea();
+    JTextArea detailTA = logBrokerMonitorR.createDetailTextArea();
     JScrollPane detailTAScrollPane = new JScrollPane(detailTA);
-    _table = new LogTable(detailTA);
-    setView(_currentView, _table);
-    _table.setFont(new Font(_fontName, Font.PLAIN, _fontSize));
-    _logTableScrollPane = new JScrollPane(_table);
+    logBrokerMonitorR.set_table(new LogTable(detailTA));
+    setView(_currentView, logBrokerMonitorR.get_table());
+    logBrokerMonitorR.get_table().setFont(new Font(_fontName, Font.PLAIN, logBrokerMonitorR.get_fontSize()));
+    logBrokerMonitorR.set_logTableScrollPane(new JScrollPane(logBrokerMonitorR.get_table()));
 
     if (_trackTableScrollPane) {
-      _logTableScrollPane.getVerticalScrollBar().addAdjustmentListener(
+      logBrokerMonitorR.get_logTableScrollPane().getVerticalScrollBar().addAdjustmentListener(
           new TrackingAdjustmentListener()
       );
     }
@@ -550,7 +513,7 @@ public class LogBrokerMonitor {
     JSplitPane tableViewerSplitPane = new JSplitPane();
     tableViewerSplitPane.setOneTouchExpandable(true);
     tableViewerSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-    tableViewerSplitPane.setLeftComponent(_logTableScrollPane);
+    tableViewerSplitPane.setLeftComponent(logBrokerMonitorR.get_logTableScrollPane());
     tableViewerSplitPane.setRightComponent(detailTAScrollPane);
     // Make sure to do this last..
     //tableViewerSplitPane.setDividerLocation(1.0); Doesn't work
@@ -565,12 +528,12 @@ public class LogBrokerMonitor {
     // Configure the CategoryExplorer
     //
 
-    _categoryExplorerTree = new CategoryExplorerTree();
+    logBrokerMonitorR.set_categoryExplorerTree(new CategoryExplorerTree());
 
-    _table.getFilteredLogTableModel().setLogRecordFilter(createLogRecordFilter());
+    logBrokerMonitorR.get_table().getFilteredLogTableModel().setLogRecordFilter(createLogRecordFilter());
 
     JScrollPane categoryExplorerTreeScrollPane =
-        new JScrollPane(_categoryExplorerTree);
+        new JScrollPane(logBrokerMonitorR.get_categoryExplorerTree());
     categoryExplorerTreeScrollPane.setPreferredSize(new Dimension(130, 400));
 
     // Load most recently used file list
@@ -590,11 +553,11 @@ public class LogBrokerMonitor {
     // Add the MenuBar, StatusArea, CategoryExplorer|LogTable to the
     // LogMonitorFrame.
     //
-    _logMonitorFrame.getRootPane().setJMenuBar(createMenuBar());
-    _logMonitorFrame.getContentPane().add(splitPane, BorderLayout.CENTER);
-    _logMonitorFrame.getContentPane().add(createToolBar(),
+    logBrokerMonitorR.get_logMonitorFrame().getRootPane().setJMenuBar(createMenuBar());
+    logBrokerMonitorR.get_logMonitorFrame().getContentPane().add(splitPane, BorderLayout.CENTER);
+    logBrokerMonitorR.get_logMonitorFrame().getContentPane().add(createToolBar(),
         BorderLayout.NORTH);
-    _logMonitorFrame.getContentPane().add(createStatusArea(),
+    logBrokerMonitorR.get_logMonitorFrame().getContentPane().add(logBrokerMonitorR.createStatusArea(),
         BorderLayout.SOUTH);
 
     makeLogTableListenToCategoryExplorer();
@@ -603,7 +566,7 @@ public class LogBrokerMonitor {
     //
     // Configure ConfigurationManager
     //
-    _configurationManager = new ConfigurationManager(this, _table);
+    _configurationManager = new ConfigurationManager(this, logBrokerMonitorR.get_table());
 
   }
 
@@ -613,7 +576,7 @@ public class LogBrokerMonitor {
         CategoryPath path = new CategoryPath(record.getCategory());
         return
             getMenuItem(record.getLevel()).isSelected() &&
-            _categoryExplorerTree.getExplorerModel().isCategoryPathActive(path);
+                    logBrokerMonitorR.get_categoryExplorerTree().getExplorerModel().isCategoryPathActive(path);
       }
     };
     return result;
@@ -622,18 +585,18 @@ public class LogBrokerMonitor {
   // Added in version 1.2 - Creates a new filter that sorts records based on
   // an NDC string passed in by the user.
   protected LogRecordFilter createNDCLogRecordFilter(String text) {
-    _NDCTextFilter = text;
+    logBrokerMonitorR.set_NDCTextFilter(text);
     LogRecordFilter result = new LogRecordFilter() {
       public boolean passes(LogRecord record) {
         String NDC = record.getNDC();
         CategoryPath path = new CategoryPath(record.getCategory());
-        if (NDC == null || _NDCTextFilter == null) {
+        if (NDC == null || logBrokerMonitorR.get_NDCTextFilter() == null) {
           return false;
-        } else if (NDC.toLowerCase().indexOf(_NDCTextFilter.toLowerCase()) == -1) {
+        } else if (NDC.toLowerCase().indexOf(logBrokerMonitorR.get_NDCTextFilter().toLowerCase()) == -1) {
           return false;
         } else {
           return getMenuItem(record.getLevel()).isSelected() &&
-              _categoryExplorerTree.getExplorerModel().isCategoryPathActive(path);
+                  logBrokerMonitorR.get_categoryExplorerTree().getExplorerModel().isCategoryPathActive(path);
         }
       }
     };
@@ -643,20 +606,19 @@ public class LogBrokerMonitor {
 
 
   protected void updateStatusLabel() {
-    _statusLabel.setText(getRecordsDisplayedMessage());
+    logBrokerMonitorR.updateStatusLabel();
   }
 
   protected String getRecordsDisplayedMessage() {
-    FilteredLogTableModel model = _table.getFilteredLogTableModel();
-    return getStatusText(model.getRowCount(), model.getTotalRowCount());
+    return logBrokerMonitorR.getRecordsDisplayedMessage();
   }
 
   protected void addTableModelProperties() {
-    final FilteredLogTableModel model = _table.getFilteredLogTableModel();
+    final FilteredLogTableModel model = logBrokerMonitorR.get_table().getFilteredLogTableModel();
 
     addDisplayedProperty(new Object() {
       public String toString() {
-        return getRecordsDisplayedMessage();
+        return logBrokerMonitorR.getRecordsDisplayedMessage();
       }
     });
     addDisplayedProperty(new Object() {
@@ -668,46 +630,26 @@ public class LogBrokerMonitor {
   }
 
   protected String getStatusText(int displayedRows, int totalRows) {
-    StringBuffer result = new StringBuffer();
-    result.append("Displaying: ");
-    result.append(displayedRows);
-    result.append(" records out of a total of: ");
-    result.append(totalRows);
-    result.append(" records.");
-    return result.toString();
+    return logBrokerMonitorR.getStatusText(displayedRows, totalRows);
   }
 
   protected void makeLogTableListenToCategoryExplorer() {
     ActionListener listener = new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        _table.getFilteredLogTableModel().refresh();
-        updateStatusLabel();
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+        logBrokerMonitorR.updateStatusLabel();
       }
     };
-    _categoryExplorerTree.getExplorerModel().addActionListener(listener);
+    logBrokerMonitorR.get_categoryExplorerTree().getExplorerModel().addActionListener(listener);
   }
 
   protected JPanel createStatusArea() {
-    JPanel statusArea = new JPanel();
-    JLabel status =
-        new JLabel("No log records to display.");
-    _statusLabel = status;
-    status.setHorizontalAlignment(JLabel.LEFT);
 
-    statusArea.setBorder(BorderFactory.createEtchedBorder());
-    statusArea.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-    statusArea.add(status);
-
-    return (statusArea);
+    return logBrokerMonitorR.createStatusArea();
   }
 
   protected JTextArea createDetailTextArea() {
-    JTextArea detailTA = new JTextArea();
-    detailTA.setFont(new Font("Monospaced", Font.PLAIN, 14));
-    detailTA.setTabSize(3);
-    detailTA.setLineWrap(true);
-    detailTA.setWrapStyleWord(false);
-    return (detailTA);
+    return logBrokerMonitorR.createDetailTextArea();
   }
 
   protected JMenuBar createMenuBar() {
@@ -746,8 +688,8 @@ public class LogBrokerMonitor {
     result.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         selectAllLogLevels(true);
-        _table.getFilteredLogTableModel().refresh();
-        updateStatusLabel();
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+        logBrokerMonitorR.updateStatusLabel();
       }
     });
     return result;
@@ -759,8 +701,8 @@ public class LogBrokerMonitor {
     result.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         selectAllLogLevels(false);
-        _table.getFilteredLogTableModel().refresh();
-        updateStatusLabel();
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+        logBrokerMonitorR.updateStatusLabel();
       }
     });
     return result;
@@ -786,7 +728,7 @@ public class LogBrokerMonitor {
         LogLevel.resetLogLevelColorMap();
 
         // refresh the table
-        _table.getFilteredLogTableModel().refresh();
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
       }
     });
     return result;
@@ -825,14 +767,14 @@ public class LogBrokerMonitor {
   protected void showLogLevelColorChangeDialog(JMenuItem result, LogLevel level) {
     JMenuItem menuItem = result;
     Color newColor = JColorChooser.showDialog(
-        _logMonitorFrame,
+            logBrokerMonitorR.get_logMonitorFrame(),
         "Choose LogLevel Color",
         result.getForeground());
 
     if (newColor != null) {
       // set the color for the record
       level.setLogLevelColorMap(level, newColor);
-      _table.getFilteredLogTableModel().refresh();
+      logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
     }
 
   }
@@ -843,8 +785,8 @@ public class LogBrokerMonitor {
     result.setMnemonic(level.toString().charAt(0));
     result.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        _table.getFilteredLogTableModel().refresh();
-        updateStatusLabel();
+        logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+        logBrokerMonitorR.updateStatusLabel();
       }
     });
     return result;
@@ -883,7 +825,7 @@ public class LogBrokerMonitor {
       public void actionPerformed(ActionEvent e) {
         // update list of columns and reset the view
         List selectedColumns = updateView();
-        _table.setView(selectedColumns);
+        logBrokerMonitorR.get_table().setView(selectedColumns);
       }
     });
     return result;
@@ -912,7 +854,7 @@ public class LogBrokerMonitor {
         selectAllLogTableColumns(true);
         // update list of columns and reset the view
         List selectedColumns = updateView();
-        _table.setView(selectedColumns);
+        logBrokerMonitorR.get_table().setView(selectedColumns);
       }
     });
     return result;
@@ -926,7 +868,7 @@ public class LogBrokerMonitor {
         selectAllLogTableColumns(false);
         // update list of columns and reset the view
         List selectedColumns = updateView();
-        _table.setView(selectedColumns);
+        logBrokerMonitorR.get_table().setView(selectedColumns);
       }
     });
     return result;
@@ -1124,7 +1066,7 @@ public class LogBrokerMonitor {
 
   protected void showPropertiesDialog(String title) {
     JOptionPane.showMessageDialog(
-        _logMonitorFrame,
+            logBrokerMonitorR.get_logMonitorFrame(),
         _displayedLogBrokerProperties.toArray(),
         title,
         JOptionPane.PLAIN_MESSAGE
@@ -1164,7 +1106,7 @@ public class LogBrokerMonitor {
           public void actionPerformed(ActionEvent e) {
             String inputValue =
                 JOptionPane.showInputDialog(
-                    _logMonitorFrame,
+                        logBrokerMonitorR.get_logMonitorFrame(),
                     "Find text: ",
                     "Search Record Messages",
                     JOptionPane.QUESTION_MESSAGE
@@ -1189,15 +1131,15 @@ public class LogBrokerMonitor {
           public void actionPerformed(ActionEvent e) {
             String inputValue =
                 JOptionPane.showInputDialog(
-                    _logMonitorFrame,
+                        logBrokerMonitorR.get_logMonitorFrame(),
                     "Sort by this NDC: ",
                     "Sort Log Records by NDC",
                     JOptionPane.QUESTION_MESSAGE
                 );
             setNDCTextFilter(inputValue);
             sortByNDC();
-            _table.getFilteredLogTableModel().refresh();
-            updateStatusLabel();
+            logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+            logBrokerMonitorR.updateStatusLabel();
           }
         }
 
@@ -1213,11 +1155,11 @@ public class LogBrokerMonitor {
     editRestoreAllNDCMI.addActionListener(
         new ActionListener() {
           public void actionPerformed(ActionEvent e) {
-            _table.getFilteredLogTableModel().setLogRecordFilter(createLogRecordFilter());
+            logBrokerMonitorR.get_table().getFilteredLogTableModel().setLogRecordFilter(createLogRecordFilter());
             // reset the text filter
             setNDCTextFilter("");
-            _table.getFilteredLogTableModel().refresh();
-            updateStatusLabel();
+            logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+            logBrokerMonitorR.updateStatusLabel();
           }
         }
     );
@@ -1229,7 +1171,7 @@ public class LogBrokerMonitor {
     tb.putClientProperty("JToolBar.isRollover", Boolean.TRUE);
     JComboBox fontCombo = new JComboBox();
     JComboBox fontSizeCombo = new JComboBox();
-    _fontSizeCombo = fontSizeCombo;
+    logBrokerMonitorR.set_fontSizeCombo(fontSizeCombo);
 
     ClassLoader cl = this.getClass().getClassLoader();
     if(cl == null) {
@@ -1256,9 +1198,9 @@ public class LogBrokerMonitor {
     newButton.addActionListener(
         new ActionListener() {
           public void actionPerformed(ActionEvent e) {
-            _table.clearLogRecords();
-            _categoryExplorerTree.getExplorerModel().resetAllNodeCounts();
-            updateStatusLabel();
+            logBrokerMonitorR.get_table().clearLogRecords();
+            logBrokerMonitorR.get_categoryExplorerTree().getExplorerModel().resetAllNodeCounts();
+            logBrokerMonitorR.updateStatusLabel();
             clearDetailTextArea();
             LogRecord.resetSequenceNumber();
           }
@@ -1289,7 +1231,7 @@ public class LogBrokerMonitor {
           public void actionPerformed(ActionEvent e) {
             JComboBox box = (JComboBox) e.getSource();
             String font = (String) box.getSelectedItem();
-            _table.setFont(new Font(font, Font.PLAIN, _fontSize));
+            logBrokerMonitorR.get_table().setFont(new Font(font, Font.PLAIN, logBrokerMonitorR.get_fontSize()));
             _fontName = font;
           }
         }
@@ -1304,7 +1246,7 @@ public class LogBrokerMonitor {
     fontSizeCombo.addItem("18");
     fontSizeCombo.addItem("24");
 
-    fontSizeCombo.setSelectedItem(String.valueOf(_fontSize));
+    fontSizeCombo.setSelectedItem(String.valueOf(logBrokerMonitorR.get_fontSize()));
     fontSizeCombo.addActionListener(
         new ActionListener() {
           public void actionPerformed(ActionEvent e) {
@@ -1314,7 +1256,7 @@ public class LogBrokerMonitor {
 
             setFontSizeSilently(s);
             refreshDetailTextArea();
-            _fontSize = s;
+            logBrokerMonitorR.set_fontSize(s);
           }
         }
     );
@@ -1351,7 +1293,7 @@ public class LogBrokerMonitor {
 //    }
 
   protected void setView(String viewString, LogTable table) {
-    if (DETAILED_VIEW.equals(viewString)) {
+    if (LogBrokerMonitorR.DETAILED_VIEW.equals(viewString)) {
       table.setDetailedView();
     } else {
       String message = viewString + "does not match a supported view.";
@@ -1366,7 +1308,7 @@ public class LogBrokerMonitor {
     while (levels.hasNext()) {
       result.addItem(levels.next());
     }
-    result.setSelectedItem(_leastSevereDisplayedLogLevel);
+    result.setSelectedItem(logBrokerMonitorR.get_leastSevereDisplayedLogLevel());
 
     result.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -1380,12 +1322,12 @@ public class LogBrokerMonitor {
   }
 
   protected void setLeastSevereDisplayedLogLevel(LogLevel level) {
-    if (level == null || _leastSevereDisplayedLogLevel == level) {
+    if (level == null || logBrokerMonitorR.get_leastSevereDisplayedLogLevel() == level) {
       return; // nothing to do
     }
-    _leastSevereDisplayedLogLevel = level;
-    _table.getFilteredLogTableModel().refresh();
-    updateStatusLabel();
+    logBrokerMonitorR.set_leastSevereDisplayedLogLevel(level);
+    logBrokerMonitorR.get_table().getFilteredLogTableModel().refresh();
+    logBrokerMonitorR.updateStatusLabel();
   }
 
   /**
@@ -1400,15 +1342,12 @@ public class LogBrokerMonitor {
    */
   protected void trackTableScrollPane() {
     // do nothing
+    logBrokerMonitorR.trackTableScrollPane();
   }
 
   protected void centerFrame(JFrame frame) {
-    Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-    Dimension comp = frame.getSize();
 
-    frame.setLocation(((screen.width - comp.width) / 2),
-        ((screen.height - comp.height) / 2));
-
+    logBrokerMonitorR.centerFrame(frame);
   }
 
   /**
@@ -1424,7 +1363,7 @@ public class LogBrokerMonitor {
       chooser = new JFileChooser(_fileLocation);
     }
 
-    int returnVal = chooser.showOpenDialog(_logMonitorFrame);
+    int returnVal = chooser.showOpenDialog(logBrokerMonitorR.get_logMonitorFrame());
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       File f = chooser.getSelectedFile();
       if (loadLogFile(f)) {
@@ -1467,7 +1406,7 @@ public class LogBrokerMonitor {
    * with the updated MRU list.
    */
   protected void updateMRUList() {
-    JMenu menu = _logMonitorFrame.getJMenuBar().getMenu(0);
+    JMenu menu = logBrokerMonitorR.get_logMonitorFrame().getJMenuBar().getMenu(0);
     menu.removeAll();
     menu.add(createOpenMI());
     menu.add(createOpenURLMI());
@@ -1535,7 +1474,7 @@ public class LogBrokerMonitor {
       title = "Are you sure you want to exit?";
     }
     int value = JOptionPane.showConfirmDialog(
-        _logMonitorFrame,
+            logBrokerMonitorR.get_logMonitorFrame(),
         message.toString(),
         title,
         JOptionPane.OK_CANCEL_OPTION,
@@ -1588,6 +1527,243 @@ public class LogBrokerMonitor {
     }
     return ok;
   }
+
+  public static class LogBrokerMonitorR {
+    public static final String DETAILED_VIEW = "Detailed";//    public static final String STANDARD_VIEW = "Standard";
+    //    public static final String COMPACT_VIEW = "Compact";
+    //--------------------------------------------------------------------------
+    //   Protected Variables:
+    //--------------------------------------------------------------------------
+    public JFrame _logMonitorFrame;
+
+    public JFrame get_logMonitorFrame() {
+      return _logMonitorFrame;
+    }
+
+    public void set_logMonitorFrame(JFrame _logMonitorFrame) {
+      this._logMonitorFrame = _logMonitorFrame;
+    }
+
+    public int _logMonitorFrameWidth = 550;
+
+    public int get_logMonitorFrameWidth() {
+      return _logMonitorFrameWidth;
+    }
+
+    public void set_logMonitorFrameWidth(int _logMonitorFrameWidth) {
+      this._logMonitorFrameWidth = _logMonitorFrameWidth;
+    }
+
+    public int _logMonitorFrameHeight = 500;
+
+    public int get_logMonitorFrameHeight() {
+      return _logMonitorFrameHeight;
+    }
+
+    public void set_logMonitorFrameHeight(int _logMonitorFrameHeight) {
+      this._logMonitorFrameHeight = _logMonitorFrameHeight;
+    }
+
+    public LogTable _table;
+
+    public LogTable get_table() {
+      return _table;
+    }
+
+    public void set_table(LogTable _table) {
+      this._table = _table;
+    }
+
+    public CategoryExplorerTree _categoryExplorerTree;
+
+    public CategoryExplorerTree get_categoryExplorerTree() {
+      return _categoryExplorerTree;
+    }
+
+    public void set_categoryExplorerTree(CategoryExplorerTree _categoryExplorerTree) {
+      this._categoryExplorerTree = _categoryExplorerTree;
+    }
+
+    public String _searchText;
+
+    public String get_searchText() {
+      return _searchText;
+    }
+
+    public void set_searchText(String _searchText) {
+      this._searchText = _searchText;
+    }
+
+    public String _NDCTextFilter = "";
+
+    public String get_NDCTextFilter() {
+      return _NDCTextFilter;
+    }
+
+    public void set_NDCTextFilter(String _NDCTextFilter) {
+      this._NDCTextFilter = _NDCTextFilter;
+    }
+
+    public LogLevel _leastSevereDisplayedLogLevel = LogLevel.DEBUG;
+
+    public LogLevel get_leastSevereDisplayedLogLevel() {
+      return _leastSevereDisplayedLogLevel;
+    }
+
+    public void set_leastSevereDisplayedLogLevel(LogLevel _leastSevereDisplayedLogLevel) {
+      this._leastSevereDisplayedLogLevel = _leastSevereDisplayedLogLevel;
+    }
+
+    public JScrollPane _logTableScrollPane;
+
+    public JScrollPane get_logTableScrollPane() {
+      return _logTableScrollPane;
+    }
+
+    public void set_logTableScrollPane(JScrollPane _logTableScrollPane) {
+      this._logTableScrollPane = _logTableScrollPane;
+    }
+
+    public JLabel _statusLabel;
+    public Object _lock = new Object();
+    public JComboBox _fontSizeCombo;
+
+    public JComboBox get_fontSizeCombo() {
+      return _fontSizeCombo;
+    }
+
+    public void set_fontSizeCombo(JComboBox _fontSizeCombo) {
+      this._fontSizeCombo = _fontSizeCombo;
+    }
+
+    public int _fontSize = 10;
+
+    public int get_fontSize() {
+      return _fontSize;
+    }
+
+    public void set_fontSize(int _fontSize) {
+      this._fontSize = _fontSize;
+    }
+
+    public LogBrokerMonitorR() {
+    }
+
+    /**
+     * Changes the font selection in the combo box and returns the
+     * size actually selected.
+     *
+     * @return -1 if unable to select an appropriate font
+     */
+    public int changeFontSizeCombo(JComboBox box, int requestedSize) {
+      int len = box.getItemCount();
+      int currentValue;
+      Object currentObject;
+      Object selectedObject = box.getItemAt(0);
+      int selectedValue = Integer.parseInt(String.valueOf(selectedObject));
+      for (int i = 0; i < len; i++) {
+        currentObject = box.getItemAt(i);
+        currentValue = Integer.parseInt(String.valueOf(currentObject));
+        if (selectedValue < currentValue && currentValue <= requestedSize) {
+          selectedValue = currentValue;
+          selectedObject = currentObject;
+        }
+      }
+      box.setSelectedItem(selectedObject);
+      return selectedValue;
+    }
+
+    public void setFontSize(Component component, int fontSize) {
+      Font oldFont = component.getFont();
+      Font newFont =
+              new Font(oldFont.getFontName(), oldFont.getStyle(), fontSize);
+      component.setFont(newFont);
+    }
+
+    public void updateFrameSize() {
+      _logMonitorFrame.setSize(_logMonitorFrameWidth, _logMonitorFrameHeight);
+      centerFrame(_logMonitorFrame);
+    }
+
+    public void updateStatusLabel() {
+      _statusLabel.setText(getRecordsDisplayedMessage());
+    }
+
+    public String getRecordsDisplayedMessage() {
+      FilteredLogTableModel model = _table.getFilteredLogTableModel();
+      return getStatusText(model.getRowCount(), model.getTotalRowCount());
+    }
+
+    public String getStatusText(int displayedRows, int totalRows) {
+      StringBuffer result = new StringBuffer();
+      result.append("Displaying: ");
+      result.append(displayedRows);
+      result.append(" records out of a total of: ");
+      result.append(totalRows);
+      result.append(" records.");
+      return result.toString();
+    }
+
+    public JPanel createStatusArea() {
+      JPanel statusArea = new JPanel();
+      JLabel status =
+              new JLabel("No log records to display.");
+      _statusLabel = status;
+      status.setHorizontalAlignment(JLabel.LEFT);
+
+      statusArea.setBorder(BorderFactory.createEtchedBorder());
+      statusArea.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+      statusArea.add(status);
+
+      return (statusArea);
+    }
+
+    public JTextArea createDetailTextArea() {
+      JTextArea detailTA = new JTextArea();
+      detailTA.setFont(new Font("Monospaced", Font.PLAIN, 14));
+      detailTA.setTabSize(3);
+      detailTA.setLineWrap(true);
+      detailTA.setWrapStyleWord(false);
+      return (detailTA);
+    }
+
+    /**
+     * Ensures that the Table's ScrollPane Viewport will "track" with updates
+     * to the Table.  When the vertical scroll bar is at its bottom anchor
+     * and tracking is enabled then viewport will stay at the bottom most
+     * point of the component.  The purpose of this feature is to allow
+     * a developer to watch the table as messages arrive and not have to
+     * scroll after each new message arrives.  When the vertical scroll bar
+     * is at any other location, then no tracking will happen.
+     *
+     * @deprecated tracking is now done automatically.
+     */
+    public void trackTableScrollPane() {
+      // do nothing
+    }
+
+    public void centerFrame(JFrame frame) {
+      Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+      Dimension comp = frame.getSize();
+
+      frame.setLocation(((screen.width - comp.width) / 2),
+              ((screen.height - comp.height) / 2));
+
+    }
+
+    class LogBrokerMonitorWindowAdaptor extends WindowAdapter {
+      protected org.apache.log4j.lf5.viewer.LogBrokerMonitor _monitor;
+
+      public LogBrokerMonitorWindowAdaptor(org.apache.log4j.lf5.viewer.LogBrokerMonitor monitor) {
+        _monitor = monitor;
+      }
+
+      public void windowClosing(WindowEvent ev) {
+        _monitor.requestClose();
+      }
+    }
+  }
+
   //--------------------------------------------------------------------------
   //   Private Methods:
   //--------------------------------------------------------------------------
@@ -1596,17 +1772,6 @@ public class LogBrokerMonitor {
   //   Nested Top-Level Classes or Interfaces:
   //--------------------------------------------------------------------------
 
-  class LogBrokerMonitorWindowAdaptor extends WindowAdapter {
-    protected LogBrokerMonitor _monitor;
-
-    public LogBrokerMonitorWindowAdaptor(LogBrokerMonitor monitor) {
-      _monitor = monitor;
-    }
-
-    public void windowClosing(WindowEvent ev) {
-      _monitor.requestClose();
-    }
-  }
 }
 
 
